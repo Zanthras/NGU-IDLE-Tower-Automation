@@ -66,6 +66,7 @@ var IdleModeOn = Check{X: 316, Y: 114, Colors: []string{"ffeb04"}}
 var OCR_ITOPOD_START_BOX = RECT{Left: 598, Top: 216, Right: 655, Bottom: 236}
 var OCR_AP_KILL_COUNT_2LINE = RECT{Left: 470, Top: 127, Right: 740, Bottom: 155}
 var OCR_AP_KILL_COUNT_1LINE = RECT{Left: 470, Top: 127, Right: 740, Bottom: 140}
+var EXP_VALIDATION_LINE = RECT{Left: 319, Top: 595, Right: 600, Bottom: 596}
 
 var MenuMoneyPit = Check{X: 231, Y: 100}
 var MenuAdventure = Check{X: 231, Y: 131}

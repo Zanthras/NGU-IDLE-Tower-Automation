@@ -4,14 +4,21 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"os"
 	"os/exec"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/disintegration/imaging"
+
+	"github.com/tevino/abool"
 )
 
 const MIN_ITOPOD_TIER = 1
 const PP_BASE = 200
+
+var PARSE_ATTEMPTS = 0
 
 var baseEXP = map[int]int{
 	1:  1,
@@ -38,6 +45,8 @@ var baseEXP = map[int]int{
 
 func IdleITOPOD(dur time.Duration) {
 
+	log.Println("Running for", dur)
+
 	expBonus := 1.0
 	ppBonus := 1.0
 
@@ -58,6 +67,10 @@ func IdleITOPOD(dur time.Duration) {
 	var ap int
 	var exp int
 	var pp int
+	var counterResets int
+	var counterBreaks int
+
+	brokenEXP := abool.New()
 
 	var currentTier int
 	targetTier := pickTier(killMap, 0)
@@ -67,6 +80,20 @@ func IdleITOPOD(dur time.Duration) {
 		if time.Now().After(loopEnd) {
 			log.Println("Loop Completed")
 			return
+		}
+		if brokenEXP.IsSet() {
+			counterResets++
+			fmt.Println("")
+			floorMap2, killMap2 := parseKillMap()
+			for tier := range killMap2 {
+				if killMap2[tier] != killMap[tier] {
+					counterBreaks++
+					log.Println(tier, "parsed as", killMap2[tier], "expected it to be", killMap[tier])
+				}
+			}
+			floorMap = floorMap2
+			killMap = killMap2
+			brokenEXP.UnSet()
 		}
 		targetTier = pickTier(killMap, targetTier)
 		if targetTier != currentTier {
@@ -99,6 +126,9 @@ func IdleITOPOD(dur time.Duration) {
 			ap++
 			expGained := int(math.Floor(float64(baseEXP[targetTier]) * expBonus))
 			exp += expGained
+			if EXTRASANITY {
+				go validateEXPLine(brokenEXP, ap)
+			}
 			fmt.Println("")
 			//fmt.Println("Gained", expGained, "exp and 1 AP")
 		}
@@ -107,12 +137,12 @@ func IdleITOPOD(dur time.Duration) {
 		pp += ppGained
 		//fmt.Println("Gained", ppGained, "pp")
 		kills++
-		STATUS = genStat(killingStarted, kills, ap, exp, pp)
+		STATUS = genStat(killingStarted, kills, ap, exp, pp, counterResets, counterBreaks)
 		fmt.Printf("\r%s", STATUS)
 	}
 }
 
-func genStat(start time.Time, kills int, ap int, exp int, pp int) string {
+func genStat(start time.Time, kills int, ap int, exp int, pp int, resets int, broken int) string {
 	now := time.Now()
 	minutes := now.Sub(start).Minutes()
 	hours := now.Sub(start).Hours()
@@ -120,7 +150,13 @@ func genStat(start time.Time, kills int, ap int, exp int, pp int) string {
 	expStats := fmt.Sprintf("EXP/EPM: %d/%.2f", exp, float64(exp)/minutes)
 	apStats := fmt.Sprintf("AP/APM/KPA: %d/%.2f/%.2f", ap, float64(ap)/minutes, float64(kills)/float64(ap))
 	ppStats := fmt.Sprintf("PP/PPPH: %.1f/%.2f", float64(pp)/float64(1000000), float64(float64(pp)/float64(1000000))/hours)
-	statBlock := fmt.Sprintf("Hours: %.2f %s %s %s %s", hours, killStats, expStats, apStats, ppStats)
+	var brokeCount string
+	if resets > 0 {
+		brokeCount = fmt.Sprintf("Resets %d Broken: %d", resets, broken)
+	} else {
+		brokeCount = ""
+	}
+	statBlock := fmt.Sprintf("Hours: %.2f %s %s %s %s %s", hours, killStats, expStats, apStats, ppStats, brokeCount)
 	return statBlock
 }
 
@@ -147,12 +183,15 @@ func parseKillMap() (floorMap map[int]int, killMap map[int]int) {
 			time.Sleep(time.Second)
 			clickCheckWait(RegAttack)
 		} else {
+			time.Sleep(time.Second)
 			return floorMap, killMap
 		}
 	}
 }
 
 func parseKillMapRetryable() (err error, floorMap map[int]int, killMap map[int]int) {
+
+	PARSE_ATTEMPTS++
 
 	clickCheckWait(EnterITOPOD)
 	clickCheckWait(ITOPODOptimal)
@@ -161,6 +200,12 @@ func parseKillMapRetryable() (err error, floorMap map[int]int, killMap map[int]i
 	floorMap = make(map[int]int)
 
 	snagRect(OCR_ITOPOD_START_BOX, "ocr.png")
+	srcImage, _ := imaging.Open("ocr.png")
+	// make it bigger
+	dstImage := imaging.Resize(srcImage, 400, 0, imaging.Lanczos)
+	// then sharpen for the best chance of tesseracting
+	dstImage = imaging.Sharpen(dstImage, 5)
+	imaging.Save(dstImage, "ocr.png")
 	cmd := exec.Command("tesseract", "ocr.png", "stdout", "--dpi", "109")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -179,16 +224,32 @@ func parseKillMapRetryable() (err error, floorMap map[int]int, killMap map[int]i
 		tier := i
 		floorMap[tier] = idleFloor
 	}
-	floorMap[int(max_tier)] = int(optimal)
+	// grab the optimal floor for the max tier unless its too close to the next tier
+	if float64(optimal) > max_tier*50-5 {
+		floorMap[int(max_tier)] = int(max_tier*50 - 5)
+	} else {
+		floorMap[int(max_tier)] = int(optimal)
+	}
 	clickCheckWait(ITOPODEngage)
 	for i := MIN_ITOPOD_TIER; i <= int(max_tier); i++ {
+
+		OCR_BOX := OCR_AP_KILL_COUNT_2LINE
+		if i < 4 {
+			OCR_BOX = OCR_AP_KILL_COUNT_1LINE
+		}
 		clickCheckWait(EnterITOPOD)
 
 		clickCheckWait(ITOPODStartBox)
 		typeWait(fmt.Sprintf("%d", floorMap[i]))
 		clickCheckWait(ITOPODEngage)
 		moveCheck(ITOPODHeader)
-		snagRect(OCR_AP_KILL_COUNT_1LINE, "ocr.png")
+		snagRect(OCR_BOX, "ocr.png")
+		srcImage, _ := imaging.Open("ocr.png")
+		// make it bigger
+		dstImage := imaging.Resize(srcImage, 400, 0, imaging.Lanczos)
+		// then sharpen for the best chance of tesseracting
+		dstImage = imaging.Sharpen(dstImage, 5)
+		imaging.Save(dstImage, "ocr.png")
 		cmd = exec.Command("tesseract", "ocr.png", "stdout", "--dpi", "109")
 		output, err = cmd.CombinedOutput()
 		if err != nil {
@@ -196,27 +257,20 @@ func parseKillMapRetryable() (err error, floorMap map[int]int, killMap map[int]i
 		}
 		text := readable(output)
 		if !strings.Contains(text, "kills") {
-			snagRect(OCR_AP_KILL_COUNT_2LINE, "ocr.png")
-			cmd := exec.Command("tesseract", "ocr.png", "stdout", "--dpi", "109")
-			output, err := cmd.CombinedOutput()
-			if err != nil {
-				return fmt.Errorf("tesseract error %v", err), floorMap, killMap
-			}
-			text := readable(output)
-			raw, counter, err := getKills(text)
-			if err != nil {
-				return err, floorMap, killMap
-			}
-			fmt.Println("Tier", i, "Raw:", raw)
-			killMap[i] = counter
-		} else {
-			raw, counter, err := getKills(text)
-			if err != nil {
-				return err, floorMap, killMap
-			}
-			fmt.Println("Tier", i, "Raw:", raw)
-			killMap[i] = counter
+			return fmt.Errorf("badly formated tesseract input %s", text), floorMap, killMap
 		}
+		raw, counter, err := getKills(text)
+		if err != nil {
+			if EXTRASANITY {
+				os.Rename("ocr.png", fmt.Sprintf("Parse-%d_Tier-%d_Parsed-BAD.png", PARSE_ATTEMPTS, i))
+			}
+			return err, floorMap, killMap
+		}
+		if EXTRASANITY {
+			os.Rename("ocr.png", fmt.Sprintf("Parse-%d_Tier-%d_Parsed-%d.png", PARSE_ATTEMPTS, i, counter))
+		}
+		fmt.Println("Tier", i, "Raw:", raw)
+		killMap[i] = counter
 	}
 	return nil, floorMap, killMap
 }
@@ -263,4 +317,25 @@ func pickTier(killMap map[int]int, currentTier int) int {
 		return desiredTier
 	}
 	return maxTier
+}
+
+func validateEXPLine(toggle *abool.AtomicBool, apCount int) {
+	time.Sleep(100 * time.Millisecond)
+	colors := getRectColors(EXP_VALIDATION_LINE)
+	if _, found := colors["0000ff"]; !found {
+		// wait it out again in case of really delayed false positives
+		time.Sleep(100 * time.Millisecond)
+		colors2 := getRectColors(EXP_VALIDATION_LINE)
+		if _, found2 := colors2["0000ff"]; !found2 {
+			fat_line := EXP_VALIDATION_LINE
+			fat_line.Top = fat_line.Top - 20
+			fat_line.Bottom = fat_line.Bottom + 10
+			snagRect(fat_line, fmt.Sprintf("exp-%d.png", PARSE_ATTEMPTS))
+			toggle.Set()
+		}
+	}
+	// Force failures for debugging
+	//if apCount%20 == 0 {
+	//	toggle.Set()
+	//}
 }

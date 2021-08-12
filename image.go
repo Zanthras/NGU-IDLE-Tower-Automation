@@ -1,12 +1,16 @@
 package main
 
+import "C"
 import (
 	"image"
 	"image/color"
 	"image/png"
 	"log"
 	"os"
+	"os/exec"
 	"strconv"
+
+	"github.com/disintegration/imaging"
 
 	"github.com/go-vgo/robotgo"
 )
@@ -43,4 +47,44 @@ func snagRect(rect RECT, filename string) {
 	bitmap := robotgo.CaptureScreen(int(rect.Left), int(rect.Top), int(rect.Right-rect.Left), int(rect.Bottom-rect.Top))
 	defer robotgo.FreeBitmap(bitmap)
 	robotgo.SaveBitmap(bitmap, filename)
+}
+
+func getRectColors(rect RECT) map[string]int {
+	rect.Top = rect.Top + int32(TOP)
+	rect.Bottom = rect.Bottom + int32(TOP)
+	rect.Left = rect.Left + int32(LEFT)
+	rect.Right = rect.Right + int32(LEFT)
+	bitmap := robotgo.CaptureScreen(int(rect.Left), int(rect.Top), int(rect.Right-rect.Left), int(rect.Bottom-rect.Top))
+	defer robotgo.FreeBitmap(bitmap)
+	h := int(rect.Bottom) - int(rect.Top)
+	w := int(rect.Right) - int(rect.Left)
+	mapping := make(map[string]int)
+	for x := 0; x < w; x++ {
+		for y := 0; y < h; y++ {
+			pxColor := robotgo.GetColors(bitmap, x, y)
+			//log.Println(pxColor)
+			if _, found := mapping[pxColor]; !found {
+				mapping[pxColor] = 0
+			}
+			mapping[pxColor]++
+		}
+	}
+	return mapping
+}
+
+func testSharpen() {
+
+	srcImage, _ := imaging.Open("bad.png")
+	dstImage := imaging.Resize(srcImage, 400, 0, imaging.Lanczos)
+	//dstImage := imaging.Sharpen(srcImage, 5)
+	//dstImage = imaging.Blur(dstImage, .5)
+	//dstImage = imaging.Sharpen(dstImage, 5)
+	err := imaging.Save(dstImage, "bad_sharp.png")
+	if err != nil {
+		log.Fatal(err)
+	}
+	cmd := exec.Command("tesseract", "bad_sharp.png", "stdout", "--dpi", "109")
+	output, _ := cmd.CombinedOutput()
+	log.Println(string(output))
+
 }

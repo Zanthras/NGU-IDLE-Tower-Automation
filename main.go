@@ -15,11 +15,15 @@ var LEFT int
 var QUIT bool
 var FAILCOUNT int
 var STATUS string
+var EXTRASANITY bool
 
 func main() {
 
 	spam := flag.Bool("spam", false, "Spam the location and color")
+	sanityCheck := flag.Bool("sanity", false, "Enable extra sanity checking for ensuring exp/ap is generated")
 	flag.Parse()
+
+	EXTRASANITY = *sanityCheck
 
 	evChan := robotgo.EventStart()
 	go func() {
@@ -28,7 +32,11 @@ func main() {
 				fmt.Println("")
 				log.Println("Thank you for playing!")
 				writeStatusLog()
+				// Trigger a clean quit
 				QUIT = true
+				time.Sleep(time.Second)
+				// Force quit if none of the normal quit locations executed
+				os.Exit(0)
 			}
 		}
 	}()
@@ -36,13 +44,16 @@ func main() {
 	getNGULocation()
 	log.Println("Window Found at", TOP, LEFT)
 	if *spam {
+		//testSharpen()
+		//os.Exit(0)
+		//measureattack()
 		spamDetails()
 	}
 
 	// Do a daily loop forever!
 	for {
 		// Run for 12 hours to make the pill available
-		IdleITOPOD(time.Hour * 12)
+		IdleITOPOD(time.Minute * 30 * 24)
 		// 12 hours in do a pill and eat just max fruit
 		CastIronPill()
 		EatFruit(false)
@@ -81,6 +92,38 @@ func numbers(b []byte) string {
 		}
 	}
 	return string(clean)
+}
+
+func measureattack() {
+	start := time.Now()
+	clicks := int64(0)
+	last := start
+	first := true
+	for {
+		if QUIT {
+			os.Exit(0)
+		}
+		//if checkColor(EnemyHealth, false) {
+		if checkColor(EnemyHealth, false) {
+			if first {
+				clickCheckWait(RegAttackUnused)
+				first = false
+				start = time.Now()
+				last = start
+				continue
+			}
+			clicks++
+			now := time.Now()
+			dur := now.Sub(start)
+			interval := now.Sub(last)
+			log.Println(clicks, "avg", dur.Milliseconds()/clicks, "ms", "instant", interval.Milliseconds(), "ms")
+			last = now
+			if !checkColor(RegAttackUnused, true) {
+				os.Exit(0)
+			}
+			clickCheckWait(RegAttackUnused)
+		}
+	}
 }
 
 func spamDetails() {
@@ -209,6 +252,9 @@ func writeStatusLog() {
 		log.Println(err)
 	}
 	defer f.Close()
+	if STATUS == "" {
+		return
+	}
 	if _, err := f.WriteString(STATUS + "\n"); err != nil {
 		log.Println(err)
 	}
