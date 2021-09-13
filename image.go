@@ -7,10 +7,7 @@ import (
 	"image/png"
 	"log"
 	"os"
-	"os/exec"
 	"strconv"
-
-	"github.com/disintegration/imaging"
 
 	"github.com/go-vgo/robotgo"
 )
@@ -70,21 +67,4 @@ func getRectColors(rect RECT) map[string]int {
 		}
 	}
 	return mapping
-}
-
-func testSharpen() {
-
-	srcImage, _ := imaging.Open("bad.png")
-	dstImage := imaging.Resize(srcImage, 400, 0, imaging.Lanczos)
-	//dstImage := imaging.Sharpen(srcImage, 5)
-	//dstImage = imaging.Blur(dstImage, .5)
-	//dstImage = imaging.Sharpen(dstImage, 5)
-	err := imaging.Save(dstImage, "bad_sharp.png")
-	if err != nil {
-		log.Fatal(err)
-	}
-	cmd := exec.Command("tesseract", "bad_sharp.png", "stdout", "--dpi", "109")
-	output, _ := cmd.CombinedOutput()
-	log.Println(string(output))
-
 }

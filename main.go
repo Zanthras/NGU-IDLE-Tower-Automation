@@ -4,7 +4,11 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"math"
 	"os"
+	"strconv"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/go-vgo/robotgo"
@@ -13,55 +17,81 @@ import (
 var TOP int
 var LEFT int
 var QUIT bool
-var FAILCOUNT int
 var STATUS string
 var EXTRASANITY bool
+var PAUSE Pauser
+var colorTiming []time.Duration
 
 func main() {
 
 	spam := flag.Bool("spam", false, "Spam the location and color")
 	sanityCheck := flag.Bool("sanity", false, "Enable extra sanity checking for ensuring exp/ap is generated")
+	snipe := flag.String("snipe", "", "Attempt to boss snipe the targeted zone")
+	tower := flag.Bool("tower", false, "Run the ITOPOD for AP/EXP")
 	flag.Parse()
 
 	EXTRASANITY = *sanityCheck
 
-	evChan := robotgo.EventStart()
-	go func() {
-		for event := range evChan {
-			if string(event.Keychar) == "`" {
-				fmt.Println("")
-				log.Println("Thank you for playing!")
-				writeStatusLog()
-				// Trigger a clean quit
-				QUIT = true
-				time.Sleep(time.Second)
-				// Force quit if none of the normal quit locations executed
-				os.Exit(0)
-			}
-		}
-	}()
-
 	getNGULocation()
 	log.Println("Window Found at", TOP, LEFT)
-	if *spam {
-		//testSharpen()
-		//os.Exit(0)
-		//measureattack()
-		spamDetails()
-	}
 
-	// Do a daily loop forever!
-	for {
-		// Run for 12 hours to make the pill available
-		IdleITOPOD(time.Minute * 30 * 24)
-		// 12 hours in do a pill and eat just max fruit
-		CastIronPill()
-		EatFruit(false)
-		IdleITOPOD(time.Hour * 12)
-		// every 24 hours spin the wheel and eat the fruit (and pill again)
-		CastIronPill()
-		EatFruit(true)
-		SpinTheWheel()
+	// Setup the bailout key
+	go exitKeyPress("`")
+
+	// Feature selector
+	switch {
+	case false:
+		measureattack()
+	case *spam:
+		spamDetails()
+	case *snipe != "":
+		BossSnipe(*snipe)
+	case *tower:
+		firstRun := true
+		// Do a daily loop forever!
+		for {
+			if firstRun {
+				hours := time.Duration(10)
+				quarters := time.Duration(2)
+				firstRun = false
+				// customized first run time because you almost never start idling at exactly 00:00 for blood
+				IdleITOPOD(time.Minute*60*hours + time.Minute*15*quarters)
+			} else {
+				// Run for 12 hours to make the pill available
+				IdleITOPOD(time.Hour * 12)
+			}
+			// 12 hours in do a pill and eat just max fruit
+			CastIronPill()
+			EatFruit(false)
+			IdleITOPOD(time.Hour * 12)
+			// every 24 hours spin the wheel and eat the fruit (and pill again)
+			CastIronPill()
+			EatFruit(true)
+			SpinTheWheel()
+		}
+	}
+}
+
+func exitKeyPress(key string) {
+	evChan := robotgo.EventStart()
+	for event := range evChan {
+		switch {
+		case string(event.Keychar) == key:
+			fmt.Println("")
+			log.Println("Thank you for playing!")
+			writeStatusLog()
+			// Trigger a clean quit
+			QUIT = true
+			time.Sleep(time.Second)
+			// Force quit if none of the normal quit locations executed
+			os.Exit(0)
+		case string(event.Keychar) == "p":
+			if PAUSE.IsLocked() {
+				PAUSE.Unlock()
+			} else {
+				PAUSE.Lock()
+			}
+		}
 	}
 }
 
@@ -131,6 +161,7 @@ func spamDetails() {
 		if QUIT {
 			os.Exit(0)
 		}
+		PAUSE.Wait()
 		start := time.Now()
 		x, y := robotgo.GetMousePos()
 		color := robotgo.GetPixelColor(x, y)
@@ -158,7 +189,7 @@ func clickCheckValidate(c Check, inverse bool) bool {
 	}
 	//log.Println("Desired:", frameDelay, "requested:", delay, "cost", time.Now().Sub(start).Milliseconds(), "ms")
 	if inverse {
-		return checkColorInverse(c)
+		return checkColorInverse(c, false)
 	} else {
 		return checkColor(c, false)
 	}
@@ -166,6 +197,10 @@ func clickCheckValidate(c Check, inverse bool) bool {
 
 func clickCheckWait(c Check) {
 	click(c.X, c.Y, true)
+}
+
+func clickCheckRight(c Check) {
+	clickRight(c.X, c.Y, true)
 }
 
 func clickCheckNoWait(c Check) {
@@ -224,6 +259,23 @@ func click(x int, y int, frameWait bool) {
 	}
 }
 
+func clickRight(x int, y int, frameWait bool) {
+	if QUIT {
+		os.Exit(0)
+	}
+	// Always input relative pixel locations based on alt printscreen x,y paint coords
+	frameDelay := int64(33 * 2)
+	start := time.Now()
+	robotgo.Move(LEFT+x, TOP+y)
+	robotgo.ClickRight()
+	end := time.Now()
+	duration := end.Sub(start)
+	if frameWait && duration.Milliseconds() < frameDelay {
+		delay := frameDelay - duration.Milliseconds()
+		time.Sleep(time.Millisecond * time.Duration(delay))
+	}
+}
+
 func SpinTheWheel() {
 	clickCheckWait(MenuMoneyPit)
 	clickCheckWait(DailySpin)
@@ -258,4 +310,70 @@ func writeStatusLog() {
 	if _, err := f.WriteString(STATUS + "\n"); err != nil {
 		log.Println(err)
 	}
+}
+
+func prettyNum(num float64) string {
+
+	if num < 1000 {
+		return fmt.Sprintf("%.2f", num)
+	}
+	if num > math.MaxInt64 {
+		return fmt.Sprintf("%.2f", num)
+	}
+	v := int64(num)
+
+	sign := ""
+
+	// Min int64 can't be negated to a usable value, so it has to be special cased.
+	if v == math.MinInt64 {
+		return "-9,223,372,036,854,775,808"
+	}
+
+	if v < 0 {
+		sign = "-"
+		v = 0 - v
+	}
+
+	parts := []string{"", "", "", "", "", "", ""}
+	j := len(parts) - 1
+
+	for v > 999 {
+		parts[j] = strconv.FormatInt(v%1000, 10)
+		switch len(parts[j]) {
+		case 2:
+			parts[j] = "0" + parts[j]
+		case 1:
+			parts[j] = "00" + parts[j]
+		}
+		v = v / 1000
+		j--
+	}
+	parts[j] = strconv.Itoa(int(v))
+	return sign + strings.Join(parts[j:], ",")
+}
+
+type Pauser struct {
+	mtx    sync.Mutex
+	locked bool
+}
+
+func (p *Pauser) Lock() {
+	log.Println("\nPaused")
+	p.locked = true
+	p.mtx.Lock()
+}
+
+func (p *Pauser) Unlock() {
+	log.Println("Unpaused")
+	p.mtx.Unlock()
+	p.locked = false
+}
+
+func (p *Pauser) IsLocked() bool {
+	return p.locked
+}
+
+func (p *Pauser) Wait() {
+	p.mtx.Lock()
+	p.mtx.Unlock()
 }

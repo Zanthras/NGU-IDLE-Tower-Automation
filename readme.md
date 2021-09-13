@@ -23,7 +23,8 @@ Before any run update your PP/EXP bonus percentage to have accurate stats. You c
  to run the program. Position a cmd window in such a way that its not overlapping the ngu idle window and run the exe. 
 When you are ready to stop the program hit the backtick key (next to the number 1) That will cause the program to stop, 
 if that has issues for any reason locking your computer screen will also cause it to crash which conveniently also stops 
-it.
+it. You can temporarily pause/unpause the script at any time by hitting the "p" key. However the pause time will be 
+included in all the per minute metrics thus making the run look worse.
  
 ## Automation overview
 
@@ -57,6 +58,8 @@ Hours: 0.68 Kills/KPM: 2268/55.38 EXP/EPM: 2847014/69521.60 AP/APM/KPA: 716/17.4
 - EXP/EPM: Total exp gained and exp per minute. Be sure to set the exp bonus from total stats to be correct
 - AP/APM/KPA: Total AP gained, ap per minute and kills per AP. When comparing two runs KPA measures how often you have tier transitions
 - PP/PPPH: Total Perk Points gained, and perk points per hour gain. set the PP_BASE to be correct for your difficulty.
+- FPS/Instant: Just recording the time it takes to get pixel colors which is directly correlated to framerate. Higher framerate faster everything
+- Resets/Broken: Resets are the number of times the EXP line was not detected, broken is the number of times the kill counter parsed incorrectly
 
 The log file "itopod_rewards.log" will be generated and written to once per tower run (every 12 hours or when you hit `)
 it contains the last status line printed on the console for long term tracking.

@@ -41,6 +41,18 @@ var baseEXP = map[int]int{
 	18: 274,
 	19: 308,
 	20: 344,
+	21: 384,
+	22: 422,
+	23: 464,
+	24: 508,
+	25: 554,
+	26: 602,
+	27: 652,
+	28: 704,
+	29: 758,
+	30: 814,
+	31: 872,
+	32: 932,
 }
 
 func IdleITOPOD(dur time.Duration) {
@@ -81,6 +93,7 @@ func IdleITOPOD(dur time.Duration) {
 			log.Println("Loop Completed")
 			return
 		}
+		PAUSE.Wait()
 		if brokenEXP.IsSet() {
 			counterResets++
 			fmt.Println("")
@@ -120,15 +133,13 @@ func IdleITOPOD(dur time.Duration) {
 		matches := clickCheckValidate(RegAttackUnused, false)
 		if matches {
 			fmt.Printf("\nAttack did not go through\n")
-			clickCheckWait(RegAttack)
+			clickCheckWait(RegAttackUnused)
 		}
 		if killMap[currentTier] == 1 {
 			ap++
 			expGained := int(math.Floor(float64(baseEXP[targetTier]) * expBonus))
 			exp += expGained
-			if EXTRASANITY {
-				go validateEXPLine(brokenEXP, ap)
-			}
+			go validateEXPLine(brokenEXP, ap)
 			fmt.Println("")
 			//fmt.Println("Gained", expGained, "exp and 1 AP")
 		}
@@ -147,16 +158,23 @@ func genStat(start time.Time, kills int, ap int, exp int, pp int, resets int, br
 	minutes := now.Sub(start).Minutes()
 	hours := now.Sub(start).Hours()
 	killStats := fmt.Sprintf("Kills/KPM: %d/%.2f", kills, float64(kills)/minutes)
-	expStats := fmt.Sprintf("EXP/EPM: %d/%.2f", exp, float64(exp)/minutes)
+	expStats := fmt.Sprintf("EXP/EPM: %s/%s", prettyNum(float64(exp)), prettyNum(float64(exp)/minutes))
 	apStats := fmt.Sprintf("AP/APM/KPA: %d/%.2f/%.2f", ap, float64(ap)/minutes, float64(kills)/float64(ap))
-	ppStats := fmt.Sprintf("PP/PPPH: %.1f/%.2f", float64(pp)/float64(1000000), float64(float64(pp)/float64(1000000))/hours)
+	ppStats := fmt.Sprintf("PP/PPPH: %.1f/%.2f", float64(pp)/float64(1000000), float64(pp)/float64(1000000)/hours)
+	var totalTime time.Duration
+	for i := range colorTiming {
+		totalTime += colorTiming[i]
+	}
+	avgFPS := CLICKDURATION / time.Duration(CLICKCOUNT)
+	floatingFPS := totalTime / time.Duration(len(colorTiming))
+	avgTime := fmt.Sprintf("FPS/Instant %v/%v", 1000/avgFPS.Milliseconds(), 1000/floatingFPS.Milliseconds())
 	var brokeCount string
 	if resets > 0 {
 		brokeCount = fmt.Sprintf("Resets %d Broken: %d", resets, broken)
 	} else {
 		brokeCount = ""
 	}
-	statBlock := fmt.Sprintf("Hours: %.2f %s %s %s %s %s", hours, killStats, expStats, apStats, ppStats, brokeCount)
+	statBlock := fmt.Sprintf("Hours: %.2f %s %s %s %s %s %s     ", hours, killStats, expStats, apStats, ppStats, brokeCount, avgTime)
 	return statBlock
 }
 
@@ -165,8 +183,13 @@ func updateKillMap(killMap map[int]int) map[int]int {
 	for tier, kills := range killMap {
 		kills--
 		if kills < 1 {
-			kills = 40 - tier
-			killMap[tier] = kills
+			if tier > 20 {
+				kills = 20
+				killMap[tier] = kills
+			} else {
+				kills = 40 - tier
+				killMap[tier] = kills
+			}
 		} else {
 			killMap[tier] = kills
 		}
@@ -181,7 +204,7 @@ func parseKillMap() (floorMap map[int]int, killMap map[int]int) {
 		if err != nil {
 			log.Println(err)
 			time.Sleep(time.Second)
-			clickCheckWait(RegAttack)
+			clickCheckWait(RegAttackUnused)
 		} else {
 			time.Sleep(time.Second)
 			return floorMap, killMap
@@ -253,16 +276,22 @@ func parseKillMapRetryable() (err error, floorMap map[int]int, killMap map[int]i
 		cmd = exec.Command("tesseract", "ocr.png", "stdout", "--dpi", "109")
 		output, err = cmd.CombinedOutput()
 		if err != nil {
+			if EXTRASANITY {
+				os.Rename("ocr.png", fmt.Sprintf("Parse-%d_Tier-%d_Parsed-BAD1.png", PARSE_ATTEMPTS, i))
+			}
 			return fmt.Errorf("tesseract error %v", err), floorMap, killMap
 		}
 		text := readable(output)
 		if !strings.Contains(text, "kills") {
+			if EXTRASANITY {
+				os.Rename("ocr.png", fmt.Sprintf("Parse-%d_Tier-%d_Parsed-BAD2.png", PARSE_ATTEMPTS, i))
+			}
 			return fmt.Errorf("badly formated tesseract input %s", text), floorMap, killMap
 		}
 		raw, counter, err := getKills(text)
 		if err != nil {
 			if EXTRASANITY {
-				os.Rename("ocr.png", fmt.Sprintf("Parse-%d_Tier-%d_Parsed-BAD.png", PARSE_ATTEMPTS, i))
+				os.Rename("ocr.png", fmt.Sprintf("Parse-%d_Tier-%d_Parsed-BAD3.png", PARSE_ATTEMPTS, i))
 			}
 			return err, floorMap, killMap
 		}
@@ -323,19 +352,14 @@ func validateEXPLine(toggle *abool.AtomicBool, apCount int) {
 	time.Sleep(100 * time.Millisecond)
 	colors := getRectColors(EXP_VALIDATION_LINE)
 	if _, found := colors["0000ff"]; !found {
-		// wait it out again in case of really delayed false positives
-		time.Sleep(100 * time.Millisecond)
-		colors2 := getRectColors(EXP_VALIDATION_LINE)
+		// check the line directly above because macguffins arrive after exp thus make the exp line go up by one
+		colors2 := getRectColors(EXP_VALIDATION_LINE2)
 		if _, found2 := colors2["0000ff"]; !found2 {
 			fat_line := EXP_VALIDATION_LINE
-			fat_line.Top = fat_line.Top - 20
-			fat_line.Bottom = fat_line.Bottom + 10
+			fat_line.Top = fat_line.Top - 45
+			fat_line.Bottom = fat_line.Bottom + 15
 			snagRect(fat_line, fmt.Sprintf("exp-%d.png", PARSE_ATTEMPTS))
 			toggle.Set()
 		}
 	}
-	// Force failures for debugging
-	//if apCount%20 == 0 {
-	//	toggle.Set()
-	//}
 }
