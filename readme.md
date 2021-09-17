@@ -62,6 +62,10 @@ Hours: 0.68 Kills/KPM: 2268/55.38 EXP/EPM: 2847014/69521.60 AP/APM/KPA: 716/17.4
 The log file "itopod_rewards.log" will be generated and written to once per tower run (every 12 hours or when you hit `)
 it contains the last status line printed on the console for long term tracking.
 
+The same metrics are being exported in prometheus format at "http://localhost:9100/metrics"
+A prebuilt grafana dashboard and telegraf input plugin are provided in the Extras folder. Example of the dashboard
+![Grafana Dashboard of a run](Extras/grafana.png)
+
 ## Limitations
 Click delay is vital to getting the application to work correctly. Testing on my single machine shows 100% of clicks
 registering with a 25 ms delay after 5000 clicks tested. 20ms delay had only a 99% success rate. Other machines might 

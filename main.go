@@ -5,11 +5,14 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"net/http"
 	"os"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/go-vgo/robotgo"
 )
@@ -21,6 +24,7 @@ var STATUS string
 var EXTRASANITY bool
 var PAUSE Pauser
 var colorTiming []time.Duration
+var AppMetrics Metrics
 
 func main() {
 
@@ -38,6 +42,9 @@ func main() {
 	// Setup the bailout key
 	go exitKeyPress("`")
 
+	http.Handle("/metrics", promhttp.Handler())
+	go http.ListenAndServe(":9100", nil)
+
 	// Feature selector
 	switch {
 	case *debug != "":
@@ -54,6 +61,7 @@ func main() {
 	case *snipe != "":
 		BossSnipe(*snipe)
 	case *tower:
+		initMetrics()
 		firstRun := true
 		// Do a daily loop forever!
 		for {

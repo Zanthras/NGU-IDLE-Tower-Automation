@@ -11,12 +11,11 @@ import (
 	"time"
 
 	"github.com/disintegration/imaging"
-
 	"github.com/tevino/abool"
 )
 
 const MIN_ITOPOD_TIER = 1
-const PP_BASE = 200
+const PP_BASE = 700
 
 var PARSE_ATTEMPTS = 0
 
@@ -67,7 +66,8 @@ func IdleITOPOD(dur time.Duration) {
 	clickCheckWait(MenuAdventure)
 
 	// Turn off idling if it was on
-	if checkColor(IdleModeOn, false) {
+	idleResults := getRectColors(IdleModeArea)
+	if _, found := idleResults[IdleModeOn.Colors[0]]; found {
 		clickCheckWait(IdleModeAbility)
 	}
 
@@ -85,7 +85,7 @@ func IdleITOPOD(dur time.Duration) {
 	brokenEXP := abool.New()
 
 	var currentTier int
-	targetTier := pickTier(killMap, 0)
+	targetTier := pickTier(killMap, currentTier)
 	for {
 		// TimeCheck
 		loopEnd := killingStarted.Add(dur)
@@ -139,7 +139,9 @@ func IdleITOPOD(dur time.Duration) {
 		}
 		if killMap[currentTier] == 1 {
 			ap++
+			AppMetrics.AP.Inc()
 			expGained := int(math.Floor(float64(baseEXP[targetTier]) * expBonus))
+			AppMetrics.EXP.Add(float64(expGained))
 			exp += expGained
 			go validateEXPLine(brokenEXP, ap)
 			fmt.Println("")
@@ -147,9 +149,11 @@ func IdleITOPOD(dur time.Duration) {
 		}
 		killMap = updateKillMap(killMap)
 		ppGained := int(math.Floor(float64(floorMap[targetTier]+PP_BASE) * ppBonus))
+		AppMetrics.PP.Add(float64(ppGained))
 		pp += ppGained
 		//fmt.Println("Gained", ppGained, "pp")
 		kills++
+		AppMetrics.Kills.Inc()
 		STATUS = genStat(killingStarted, kills, ap, exp, pp, counterResets, counterBreaks)
 		fmt.Printf("\r%s", STATUS)
 	}
@@ -161,9 +165,14 @@ func genStat(start time.Time, kills int, ap int, exp int, pp int, resets int, br
 	minutes := adjustedDur.Minutes()
 	hours := adjustedDur.Hours()
 	killStats := fmt.Sprintf("Kills/KPM: %d/%.2f", kills, float64(kills)/minutes)
+	AppMetrics.KPM.Set(float64(kills) / minutes)
 	expStats := fmt.Sprintf("EXP/EPM: %s/%s", prettyNum(float64(exp)), prettyNum(float64(exp)/minutes))
+	AppMetrics.EPM.Set(float64(exp) / minutes)
 	apStats := fmt.Sprintf("AP/APM/KPA: %d/%.2f/%.2f", ap, float64(ap)/minutes, float64(kills)/float64(ap))
+	AppMetrics.APM.Set(float64(ap) / minutes)
+	AppMetrics.KPA.Set(float64(kills) / float64(ap))
 	ppStats := fmt.Sprintf("PP/PPPH: %.1f/%.2f", float64(pp)/float64(1000000), float64(pp)/float64(1000000)/hours)
+	AppMetrics.PPPH.Set(float64(pp) / float64(1000000) / hours)
 	var totalTime time.Duration
 	for i := range colorTiming {
 		totalTime += colorTiming[i]
@@ -171,6 +180,8 @@ func genStat(start time.Time, kills int, ap int, exp int, pp int, resets int, br
 	avgFPS := CLICKDURATION / time.Duration(CLICKCOUNT)
 	floatingFPS := totalTime / time.Duration(len(colorTiming))
 	avgTime := fmt.Sprintf("FPS/Instant %v/%v", 1000/avgFPS.Milliseconds(), 1000/floatingFPS.Milliseconds())
+	AppMetrics.FPS.Set(float64(1000 / avgFPS.Milliseconds()))
+	AppMetrics.FrameRate.Set(float64(1000 / floatingFPS.Milliseconds()))
 	var brokeCount string
 	if resets > 0 {
 		brokeCount = fmt.Sprintf("Resets %d Broken: %d", resets, broken)
@@ -209,7 +220,6 @@ func parseKillMap() (floorMap map[int]int, killMap map[int]int) {
 			time.Sleep(time.Second)
 			clickCheckWait(RegAttackUnused)
 		} else {
-			time.Sleep(time.Second)
 			return floorMap, killMap
 		}
 	}

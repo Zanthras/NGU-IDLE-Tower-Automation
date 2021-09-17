@@ -1,0 +1,7 @@
+
+[[inputs.prometheus]]
+  interval = "30s"
+  ## An array of urls to scrape metrics from.
+  urls = ["http://localhost:9100/metrics"]
+  metric_version = 2
+  fieldpass = ["ngu*"]

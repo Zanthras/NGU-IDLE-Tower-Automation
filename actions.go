@@ -9,6 +9,7 @@ import (
 )
 
 const COLORTIMINGAVG = 10
+const FrameDelayMs = 25
 
 func clickCheckWait(c Check) {
 	click(c.X, c.Y, true)
@@ -26,10 +27,10 @@ func moveCheck(c Check) {
 	if QUIT {
 		os.Exit(0)
 	}
-	frameDelay := int64(33)
+	frameDelay := int64(FrameDelayMs)
 
 	// move slightly offset instantly
-	robotgo.Move(LEFT+c.X, TOP+c.Y+80)
+	robotgo.Move(LEFT+c.X, TOP+c.Y+10)
 	robotgo.Click()
 	// move slowly to the real location
 	robotgo.MoveMouseSmooth(LEFT+c.X, TOP+c.Y, 2.0, 10.0)
@@ -49,7 +50,7 @@ func typeWait(val string) {
 	// Conservative value that does work
 	//frameDelay := int64(33 * 3)
 	// Faster value that will probably work
-	frameDelay := int64(25)
+	frameDelay := int64(FrameDelayMs)
 	start := time.Now()
 	robotgo.TypeStr(val)
 	end := time.Now()
@@ -67,7 +68,7 @@ func click(x int, y int, frameWait bool) {
 	// Conservative value that does work
 	//frameDelay := int64(33 * 2)
 	// Faster value that will probably work
-	frameDelay := int64(25)
+	frameDelay := int64(FrameDelayMs)
 	start := time.Now()
 	robotgo.Move(LEFT+x, TOP+y)
 	robotgo.Click()
@@ -83,7 +84,7 @@ func clickRight(x int, y int, frameWait bool) {
 	if QUIT {
 		os.Exit(0)
 	}
-	frameDelay := int64(33 * 2)
+	frameDelay := int64(FrameDelayMs)
 	start := time.Now()
 	robotgo.Move(LEFT+x, TOP+y)
 	robotgo.ClickRight()
@@ -106,11 +107,6 @@ func checkColor(c Check, debug bool) bool {
 		colorTiming = colorTiming[1:]
 	}
 	colorTiming = append(colorTiming, dur)
-	for i := range c.Colors {
-		if c.Colors[i] == color {
-			return true
-		}
-	}
 	if debug {
 		snagRect(RECT{
 			Left:   int32(c.X - 20),
@@ -118,7 +114,11 @@ func checkColor(c Check, debug bool) bool {
 			Right:  int32(c.X + 20),
 			Bottom: int32(c.Y + 20),
 		}, "color-debug.png")
-		//log.Println(color, "is not", c.Colors)
+	}
+	for i := range c.Colors {
+		if c.Colors[i] == color {
+			return true
+		}
 	}
 	return false
 }
@@ -192,6 +192,13 @@ func MultiCheckColor(checks []*Check, debug bool) map[*Check]CheckResult {
 	y = Top + TOP
 	w = Right - Left + 1
 	h = Bottom - Top + 1
+	// add a 10px border buffer when debugging
+	if debug {
+		x = x - 10
+		y = y - 10
+		w = w + 20
+		h = h + 20
+	}
 	bitmap := robotgo.CaptureScreen(x, y, w, h)
 	defer robotgo.FreeBitmap(bitmap)
 

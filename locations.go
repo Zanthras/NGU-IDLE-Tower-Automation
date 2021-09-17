@@ -21,7 +21,7 @@ var MyHealthFull = Check{X: 514, Y: 447, Colors: []string{"ec3434"}}
 var EnterITOPOD = Check{X: 370, Y: 250}
 var ITOPODStartBox = Check{X: 613, Y: 219}
 var ITOPODEngage = Check{X: 625, Y: 322}
-var ITOPODHeader = Check{X: 445, Y: 45}
+var ITOPODHeader = Check{X: 445, Y: 75}
 var ITOPODOptimal = Check{X: 708, Y: 233}
 var ITOPODBoxOpen = Check{X: 605, Y: 225, Colors: []string{"ffffff"}}
 var AdventureLeft = Check{X: 731, Y: 236}
@@ -31,6 +31,7 @@ var BossCrown = Check{X: 741, Y: 307, Colors: []string{"f7ef29"}}
 // Adventure Skills
 var RegAttackUnused = Check{X: 471, Y: 120, Colors: []string{"f89b9b"}}
 var RegAttackUsed = Check{X: 471, Y: 120, Colors: []string{"7c4e4e"}}
+var RegAttackAvail = Check{X: 430, Y: 125, Colors: []string{"1d1212"}}
 var StrongAttackUnused = Check{X: 581, Y: 120, Colors: []string{"f89b9b"}}
 var PiercingAttackUnused = Check{X: 781, Y: 120, Colors: []string{"f89b9b"}}
 var UltimateAttackUnused = Check{X: 881, Y: 120, Colors: []string{"f89b9b"}}
@@ -39,11 +40,13 @@ var HyperRegenSkillUnused = Check{X: 471, Y: 193, Colors: []string{"c39494"}}
 var MegaBuffSkillUnused = Check{X: 671, Y: 193, Colors: []string{"c39494"}}
 
 var IdleModeAbility = Check{X: 330, Y: 137}
-var IdleModeOn = Check{X: 316, Y: 114, Colors: []string{"ffeb04"}}
+var IdleModeOn = Check{X: 316, Y: 144, Colors: []string{"ffeb04"}}
+var IdleModeArea = RECT{Left: int32(IdleModeOn.X - 5), Top: int32(IdleModeOn.Y - 5), Right: int32(IdleModeOn.X + 5), Bottom: int32(IdleModeOn.Y + 5)}
 
 var OCR_ITOPOD_START_BOX = RECT{Left: 598, Top: 216, Right: 655, Bottom: 236}
-var OCR_AP_KILL_COUNT_2LINE = RECT{Left: 470, Top: 127, Right: 740, Bottom: 155}
-var OCR_AP_KILL_COUNT_1LINE = RECT{Left: 470, Top: 127, Right: 740, Bottom: 140}
+var OCR_AP_KILL_COUNT_2LINE = RECT{Left: 470, Top: 157, Right: 740, Bottom: 185}
+var OCR_AP_KILL_COUNT_1LINE = RECT{Left: 470, Top: 157, Right: 740, Bottom: 170}
+
 var EXP_VALIDATION_LINE = RECT{Left: 319, Top: 595, Right: 600, Bottom: 596}
 var EXP_VALIDATION_LINE2 = RECT{Left: 319, Top: 580, Right: 600, Bottom: 581}
 var OCR_ADVENTURE_ZONE_NAME = RECT{Left: 753, Top: 226, Right: 907, Bottom: 247}
