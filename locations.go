@@ -1,10 +1,7 @@
 package main
 
 import (
-	"fmt"
 	"time"
-
-	"github.com/go-vgo/robotgo"
 )
 
 var FAILCOUNT int
@@ -15,53 +12,6 @@ type Check struct {
 	X      int
 	Y      int
 	Colors []string
-}
-
-func checkColor(c Check, debug bool) bool {
-	start := time.Now()
-	color := robotgo.GetPixelColor(c.X+LEFT, c.Y+TOP)
-	end := time.Now()
-	dur := end.Sub(start)
-	CLICKDURATION = CLICKDURATION + dur
-	CLICKCOUNT++
-	if len(colorTiming) >= 10 {
-		colorTiming = colorTiming[1:]
-	}
-	colorTiming = append(colorTiming, dur)
-	for i := range c.Colors {
-		if c.Colors[i] == color {
-			return true
-		}
-	}
-	if debug {
-		snagRect(RECT{
-			Left:   int32(c.X - 20),
-			Top:    int32(c.Y - 20),
-			Right:  int32(c.X + 20),
-			Bottom: int32(c.Y + 20),
-		}, "color-debug.png")
-		//log.Println(color, "is not", c.Colors)
-	}
-	return false
-}
-
-func checkColorInverse(c Check, debug bool) bool {
-	color := robotgo.GetPixelColor(c.X+LEFT, c.Y+TOP)
-	for i := range c.Colors {
-		if c.Colors[i] == color {
-			if debug {
-				snagRect(RECT{
-					Left:   int32(c.X - 20),
-					Top:    int32(c.Y - 20),
-					Right:  int32(c.X + 20),
-					Bottom: int32(c.Y + 20),
-				}, fmt.Sprintf("color-debug-%d.png", FAILCOUNT))
-				FAILCOUNT++
-			}
-			return true
-		}
-	}
-	return false
 }
 
 var EnemyHealth = Check{X: 736, Y: 430, Colors: []string{"d93030", "eb3434", "db3131", "da3030", "e83333", "0f0303"}}
@@ -80,6 +30,7 @@ var BossCrown = Check{X: 741, Y: 307, Colors: []string{"f7ef29"}}
 
 // Adventure Skills
 var RegAttackUnused = Check{X: 471, Y: 120, Colors: []string{"f89b9b"}}
+var RegAttackUsed = Check{X: 471, Y: 120, Colors: []string{"7c4e4e"}}
 var StrongAttackUnused = Check{X: 581, Y: 120, Colors: []string{"f89b9b"}}
 var PiercingAttackUnused = Check{X: 781, Y: 120, Colors: []string{"f89b9b"}}
 var UltimateAttackUnused = Check{X: 881, Y: 120, Colors: []string{"f89b9b"}}
@@ -127,3 +78,13 @@ var CapNGU = Check{X: 625, Y: 186}
 // Yggdrasil Related
 var EatAllFruit = Check{X: 827, Y: 517}
 var EatMaxFruit = Check{X: 835, Y: 479}
+
+var EnNGUSkill1Up = Check{X: 518, Y: 265}
+var EnNGUSkill2Up = Check{X: 518, Y: 300}
+var EnNGUSkill3Up = Check{X: 518, Y: 335}
+var EnNGUSkill4Up = Check{X: 518, Y: 370}
+var EnNGUSkill5Up = Check{X: 518, Y: 405}
+var EnNGUSkill6Up = Check{X: 518, Y: 440}
+var EnNGUSkill7Up = Check{X: 518, Y: 475}
+var EnNGUSkill8Up = Check{X: 518, Y: 510}
+var EnNGUSkill9Up = Check{X: 518, Y: 545}

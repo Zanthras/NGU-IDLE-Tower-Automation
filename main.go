@@ -24,10 +24,10 @@ var colorTiming []time.Duration
 
 func main() {
 
-	spam := flag.Bool("spam", false, "Spam the location and color")
 	sanityCheck := flag.Bool("sanity", false, "Enable extra sanity checking for ensuring exp/ap is generated")
 	snipe := flag.String("snipe", "", "Attempt to boss snipe the targeted zone")
 	tower := flag.Bool("tower", false, "Run the ITOPOD for AP/EXP")
+	debug := flag.String("debug", "", "execute debug function")
 	flag.Parse()
 
 	EXTRASANITY = *sanityCheck
@@ -40,10 +40,17 @@ func main() {
 
 	// Feature selector
 	switch {
-	case false:
-		measureattack()
-	case *spam:
-		spamDetails()
+	case *debug != "":
+		switch *debug {
+		case "attack":
+			measureAttack()
+		case "spawn":
+			measureSpawn()
+		case "spam":
+			spamDetails()
+		case "timing":
+			measureClick()
+		}
 	case *snipe != "":
 		BossSnipe(*snipe)
 	case *tower:
@@ -51,8 +58,8 @@ func main() {
 		// Do a daily loop forever!
 		for {
 			if firstRun {
-				hours := time.Duration(10)
-				quarters := time.Duration(2)
+				hours := time.Duration(12)
+				quarters := time.Duration(0)
 				firstRun = false
 				// customized first run time because you almost never start idling at exactly 00:00 for blood
 				IdleITOPOD(time.Minute*60*hours + time.Minute*15*quarters)
@@ -122,158 +129,6 @@ func numbers(b []byte) string {
 		}
 	}
 	return string(clean)
-}
-
-func measureattack() {
-	start := time.Now()
-	clicks := int64(0)
-	last := start
-	first := true
-	for {
-		if QUIT {
-			os.Exit(0)
-		}
-		//if checkColor(EnemyHealth, false) {
-		if checkColor(EnemyHealth, false) {
-			if first {
-				clickCheckWait(RegAttackUnused)
-				first = false
-				start = time.Now()
-				last = start
-				continue
-			}
-			clicks++
-			now := time.Now()
-			dur := now.Sub(start)
-			interval := now.Sub(last)
-			log.Println(clicks, "avg", dur.Milliseconds()/clicks, "ms", "instant", interval.Milliseconds(), "ms")
-			last = now
-			if !checkColor(RegAttackUnused, true) {
-				os.Exit(0)
-			}
-			clickCheckWait(RegAttackUnused)
-		}
-	}
-}
-
-func spamDetails() {
-	for {
-		if QUIT {
-			os.Exit(0)
-		}
-		PAUSE.Wait()
-		start := time.Now()
-		x, y := robotgo.GetMousePos()
-		color := robotgo.GetPixelColor(x, y)
-		end := time.Now()
-		timer := end.Sub(start)
-		fmt.Println("pos:", x-LEFT, y-TOP, "color---- ", color, timer)
-	}
-}
-
-func clickCheckValidate(c Check, inverse bool) bool {
-	if QUIT {
-		os.Exit(0)
-	}
-	// Always input relative pixel locations based on alt printscreen x,y paint coords
-	frameDelay := int64(33 * 2)
-	start := time.Now()
-	robotgo.Move(LEFT+c.X, TOP+c.Y)
-	robotgo.Click()
-	duration := time.Now().Sub(start)
-	var delay int64
-	if duration.Milliseconds() < frameDelay {
-		delay = frameDelay - duration.Milliseconds()
-		//log.Println("Sleeping for", delay, "ms")
-		time.Sleep(time.Millisecond * time.Duration(delay))
-	}
-	//log.Println("Desired:", frameDelay, "requested:", delay, "cost", time.Now().Sub(start).Milliseconds(), "ms")
-	if inverse {
-		return checkColorInverse(c, false)
-	} else {
-		return checkColor(c, false)
-	}
-}
-
-func clickCheckWait(c Check) {
-	click(c.X, c.Y, true)
-}
-
-func clickCheckRight(c Check) {
-	clickRight(c.X, c.Y, true)
-}
-
-func clickCheckNoWait(c Check) {
-	click(c.X, c.Y, false)
-}
-
-func moveCheck(c Check) {
-	if QUIT {
-		os.Exit(0)
-	}
-	frameDelay := int64(33)
-
-	// move slightly offset instantly
-	robotgo.Move(LEFT+c.X, TOP+c.Y+80)
-	robotgo.Click()
-	// move slowly to the real location
-	robotgo.MoveMouseSmooth(LEFT+c.X, TOP+c.Y, 2.0, 10.0)
-	end := time.Now()
-	start := time.Now()
-	duration := end.Sub(start)
-	if duration.Milliseconds() < frameDelay {
-		delay := frameDelay - duration.Milliseconds()
-		time.Sleep(time.Millisecond * time.Duration(delay))
-	}
-}
-
-func typeWait(val string) {
-	if QUIT {
-		os.Exit(0)
-	}
-	frameDelay := int64(33 * 3)
-	start := time.Now()
-	robotgo.TypeStr(val)
-	end := time.Now()
-	duration := end.Sub(start)
-	if duration.Milliseconds() < frameDelay {
-		delay := frameDelay - duration.Milliseconds()
-		time.Sleep(time.Millisecond * time.Duration(delay))
-	}
-}
-
-func click(x int, y int, frameWait bool) {
-	if QUIT {
-		os.Exit(0)
-	}
-	// Always input relative pixel locations based on alt printscreen x,y paint coords
-	frameDelay := int64(33 * 2)
-	start := time.Now()
-	robotgo.Move(LEFT+x, TOP+y)
-	robotgo.Click()
-	end := time.Now()
-	duration := end.Sub(start)
-	if frameWait && duration.Milliseconds() < frameDelay {
-		delay := frameDelay - duration.Milliseconds()
-		time.Sleep(time.Millisecond * time.Duration(delay))
-	}
-}
-
-func clickRight(x int, y int, frameWait bool) {
-	if QUIT {
-		os.Exit(0)
-	}
-	// Always input relative pixel locations based on alt printscreen x,y paint coords
-	frameDelay := int64(33 * 2)
-	start := time.Now()
-	robotgo.Move(LEFT+x, TOP+y)
-	robotgo.ClickRight()
-	end := time.Now()
-	duration := end.Sub(start)
-	if frameWait && duration.Milliseconds() < frameDelay {
-		delay := frameDelay - duration.Milliseconds()
-		time.Sleep(time.Millisecond * time.Duration(delay))
-	}
 }
 
 func SpinTheWheel() {
@@ -355,18 +210,22 @@ func prettyNum(num float64) string {
 type Pauser struct {
 	mtx    sync.Mutex
 	locked bool
+	start  time.Time
+	total  time.Duration
 }
 
 func (p *Pauser) Lock() {
-	log.Println("\nPaused")
+	fmt.Println("\nPaused")
 	p.locked = true
+	p.start = time.Now()
 	p.mtx.Lock()
 }
 
 func (p *Pauser) Unlock() {
-	log.Println("Unpaused")
+	fmt.Println("\nUnpaused")
 	p.mtx.Unlock()
 	p.locked = false
+	p.total += time.Now().Sub(p.start)
 }
 
 func (p *Pauser) IsLocked() bool {
@@ -377,3 +236,9 @@ func (p *Pauser) Wait() {
 	p.mtx.Lock()
 	p.mtx.Unlock()
 }
+
+func (p *Pauser) Duration() time.Duration {
+	return p.total
+}
+
+func noop(i interface{}) {}

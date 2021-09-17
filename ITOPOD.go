@@ -130,10 +130,12 @@ func IdleITOPOD(dur time.Duration) {
 				break
 			}
 		}
-		matches := clickCheckValidate(RegAttackUnused, false)
-		if matches {
-			fmt.Printf("\nAttack did not go through\n")
-			clickCheckWait(RegAttackUnused)
+		// Spam the attack button until the enemy is confirmed dead
+		for {
+			clickCheckNoWait(RegAttackUnused)
+			if checkColor(EnemyHealthEmpty, false) {
+				break
+			}
 		}
 		if killMap[currentTier] == 1 {
 			ap++
@@ -155,8 +157,9 @@ func IdleITOPOD(dur time.Duration) {
 
 func genStat(start time.Time, kills int, ap int, exp int, pp int, resets int, broken int) string {
 	now := time.Now()
-	minutes := now.Sub(start).Minutes()
-	hours := now.Sub(start).Hours()
+	adjustedDur := now.Sub(start) - PAUSE.Duration()
+	minutes := adjustedDur.Minutes()
+	hours := adjustedDur.Hours()
 	killStats := fmt.Sprintf("Kills/KPM: %d/%.2f", kills, float64(kills)/minutes)
 	expStats := fmt.Sprintf("EXP/EPM: %s/%s", prettyNum(float64(exp)), prettyNum(float64(exp)/minutes))
 	apStats := fmt.Sprintf("AP/APM/KPA: %d/%.2f/%.2f", ap, float64(ap)/minutes, float64(kills)/float64(ap))

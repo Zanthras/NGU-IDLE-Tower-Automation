@@ -23,8 +23,7 @@ Before any run update your PP/EXP bonus percentage to have accurate stats. You c
  to run the program. Position a cmd window in such a way that its not overlapping the ngu idle window and run the exe. 
 When you are ready to stop the program hit the backtick key (next to the number 1) That will cause the program to stop, 
 if that has issues for any reason locking your computer screen will also cause it to crash which conveniently also stops 
-it. You can temporarily pause/unpause the script at any time by hitting the "p" key. However the pause time will be 
-included in all the per minute metrics thus making the run look worse.
+it. If you wish to temporarily pause the loop, hit the p key, to resume hit the p key again.
  
 ## Automation overview
 
@@ -58,18 +57,15 @@ Hours: 0.68 Kills/KPM: 2268/55.38 EXP/EPM: 2847014/69521.60 AP/APM/KPA: 716/17.4
 - EXP/EPM: Total exp gained and exp per minute. Be sure to set the exp bonus from total stats to be correct
 - AP/APM/KPA: Total AP gained, ap per minute and kills per AP. When comparing two runs KPA measures how often you have tier transitions
 - PP/PPPH: Total Perk Points gained, and perk points per hour gain. set the PP_BASE to be correct for your difficulty.
-- FPS/Instant: Just recording the time it takes to get pixel colors which is directly correlated to framerate. Higher framerate faster everything
-- Resets/Broken: Resets are the number of times the EXP line was not detected, broken is the number of times the kill counter parsed incorrectly
+- FPS/Instant: Average framerate as measured by the duration it takes to get a pixel color. And the instant measurement of the same
 
 The log file "itopod_rewards.log" will be generated and written to once per tower run (every 12 hours or when you hit `)
 it contains the last status line printed on the console for long term tracking.
 
 ## Limitations
-This program will 100% break once your respawn timer is lower than the regular attack timer. I'm not quite there yet, so 
-I havent fixed that problem yet. NGU idle doesnt always perfectly record clicks, if tried to add as many checks as I can
-to catch when that happens, but I dont want to add too many because the act of checking takes 2 frames worth of time. I 
-am assuming thats because of double buffering or some other reason. Regardless ive optimized the killing loop for maximal
- speed, so every check will slow it down a bit.
+Click delay is vital to getting the application to work correctly. Testing on my single machine shows 100% of clicks
+registering with a 25 ms delay after 5000 clicks tested. 20ms delay had only a 99% success rate. Other machines might 
+have other success rates. Missing clicks is bad, sometimes I can account for it, sometimes I cant. 
  
 This program is 100% based on reading pixel colors and controlling your mouse, using your computer while this is running
  does not work, turning your monitor off while this is running does not work. Locking your computer does not work. 
