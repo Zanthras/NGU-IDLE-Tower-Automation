@@ -17,6 +17,7 @@ type Metrics struct {
 	PPPH      prometheus.Gauge
 	FPS       prometheus.Gauge
 	FrameRate prometheus.Gauge
+	Rescans   prometheus.Counter
 }
 
 func initMetrics() {
@@ -65,6 +66,10 @@ func initMetrics() {
 		FrameRate: promauto.NewGauge(prometheus.GaugeOpts{
 			Name: "ngu_fps_instant",
 			Help: "Framerate from the last 10 frames",
+		}),
+		Rescans: promauto.NewCounter(prometheus.CounterOpts{
+			Name: "ngu_rescans",
+			Help: "Total kill counter rescans",
 		}),
 	}
 	AppMetrics = m

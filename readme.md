@@ -52,7 +52,7 @@ During operation the program will constantly print out some internal tracking me
 ```
 Hours: 0.68 Kills/KPM: 2268/55.38 EXP/EPM: 2847014/69521.60 AP/APM/KPA: 716/17.48/3.17 PP/PPPH: 242.5/355.37
 ```
-- Hours: Tower runtime. As mentioned earlier the tower resets every 12 hours so this value will be larger than that
+- Hours: Tower runtime. As mentioned earlier the tower resets every 12 hours so this value will never be larger than that
 - Kills/KPM: Total kills and kills per minute. kpm is the main driving factor for getting more everything.
 - EXP/EPM: Total exp gained and exp per minute. Be sure to set the exp bonus from total stats to be correct
 - AP/APM/KPA: Total AP gained, ap per minute and kills per AP. When comparing two runs KPA measures how often you have tier transitions
@@ -65,6 +65,7 @@ it contains the last status line printed on the console for long term tracking.
 The same metrics are being exported in prometheus format at "http://localhost:9100/metrics"
 A prebuilt grafana dashboard and telegraf input plugin are provided in the Extras folder. Example of the dashboard
 ![Grafana Dashboard of a run](Extras/grafana.png)
+
 
 ## Limitations
 Click delay is vital to getting the application to work correctly. Testing on my single machine shows 100% of clicks

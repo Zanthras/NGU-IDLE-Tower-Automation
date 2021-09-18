@@ -46,7 +46,6 @@ var IdleModeArea = RECT{Left: int32(IdleModeOn.X - 5), Top: int32(IdleModeOn.Y -
 var OCR_ITOPOD_START_BOX = RECT{Left: 598, Top: 216, Right: 655, Bottom: 236}
 var OCR_AP_KILL_COUNT_2LINE = RECT{Left: 470, Top: 157, Right: 740, Bottom: 185}
 var OCR_AP_KILL_COUNT_1LINE = RECT{Left: 470, Top: 157, Right: 740, Bottom: 170}
-
 var EXP_VALIDATION_LINE = RECT{Left: 319, Top: 595, Right: 600, Bottom: 596}
 var EXP_VALIDATION_LINE2 = RECT{Left: 319, Top: 580, Right: 600, Bottom: 581}
 var OCR_ADVENTURE_ZONE_NAME = RECT{Left: 753, Top: 226, Right: 907, Bottom: 247}

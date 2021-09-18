@@ -40,7 +40,7 @@ func main() {
 	log.Println("Window Found at", TOP, LEFT)
 
 	// Setup the bailout key
-	go exitKeyPress("`")
+	go watchKeyBindings("`", "p")
 
 	http.Handle("/metrics", promhttp.Handler())
 	go http.ListenAndServe(":9100", nil)
@@ -87,11 +87,11 @@ func main() {
 	}
 }
 
-func exitKeyPress(key string) {
+func watchKeyBindings(quitKey string, pauseKey string) {
 	evChan := robotgo.EventStart()
 	for event := range evChan {
 		switch {
-		case string(event.Keychar) == key:
+		case string(event.Keychar) == quitKey:
 			fmt.Println("")
 			log.Println("Thank you for playing!")
 			writeStatusLog()
@@ -100,7 +100,7 @@ func exitKeyPress(key string) {
 			time.Sleep(time.Second)
 			// Force quit if none of the normal quit locations executed
 			os.Exit(0)
-		case string(event.Keychar) == "p":
+		case string(event.Keychar) == pauseKey:
 			if PAUSE.IsLocked() {
 				PAUSE.Unlock()
 			} else {

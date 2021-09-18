@@ -93,9 +93,9 @@ func IdleITOPOD(dur time.Duration) {
 			log.Println("Loop Completed")
 			return
 		}
-		PAUSE.Wait()
 		if brokenEXP.IsSet() {
 			counterResets++
+			AppMetrics.Rescans.Inc()
 			fmt.Println("")
 			floorMap2, killMap2 := parseKillMap()
 			for tier := range killMap2 {
@@ -155,6 +155,8 @@ func IdleITOPOD(dur time.Duration) {
 		kills++
 		AppMetrics.Kills.Inc()
 		STATUS = genStat(killingStarted, kills, ap, exp, pp, counterResets, counterBreaks)
+		// Move the pausing from the start of the loop to the end of the loop but before the status print, this way the pause doesnt print before the final stat block
+		PAUSE.Wait()
 		fmt.Printf("\r%s", STATUS)
 	}
 }

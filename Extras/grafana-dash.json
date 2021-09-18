@@ -618,7 +618,7 @@
       "renderer": "flot",
       "seriesOverrides": [
         {
-          "alias": "prometheus.ngu_ap",
+          "alias": "AP",
           "yaxis": 2
         }
       ],
@@ -627,7 +627,15 @@
       "steppedLine": false,
       "targets": [
         {
-          "groupBy": [],
+          "alias": "$col",
+          "groupBy": [
+            {
+              "params": [
+                "30s"
+              ],
+              "type": "time"
+            }
+          ],
           "measurement": "prometheus",
           "orderByTime": "ASC",
           "policy": "default",
@@ -640,13 +648,31 @@
                   "ngu_ap"
                 ],
                 "type": "field"
+              },
+              {
+                "params": [],
+                "type": "last"
+              },
+              {
+                "params": [
+                  "AP"
+                ],
+                "type": "alias"
               }
             ]
           ],
           "tags": []
         },
         {
-          "groupBy": [],
+          "alias": "$col",
+          "groupBy": [
+            {
+              "params": [
+                "30s"
+              ],
+              "type": "time"
+            }
+          ],
           "measurement": "prometheus",
           "orderByTime": "ASC",
           "policy": "default",
@@ -659,6 +685,16 @@
                   "ngu_apm"
                 ],
                 "type": "field"
+              },
+              {
+                "params": [],
+                "type": "last"
+              },
+              {
+                "params": [
+                  "APM"
+                ],
+                "type": "alias"
               }
             ],
             [
@@ -667,6 +703,16 @@
                   "ngu_kpa"
                 ],
                 "type": "field"
+              },
+              {
+                "params": [],
+                "type": "last"
+              },
+              {
+                "params": [
+                  "KPA"
+                ],
+                "type": "alias"
               }
             ]
           ],
@@ -757,7 +803,7 @@
       "renderer": "flot",
       "seriesOverrides": [
         {
-          "alias": "prometheus.ngu_exp",
+          "alias": "EXP",
           "yaxis": 2
         }
       ],
@@ -766,7 +812,15 @@
       "steppedLine": false,
       "targets": [
         {
-          "groupBy": [],
+          "alias": "$col",
+          "groupBy": [
+            {
+              "params": [
+                "30s"
+              ],
+              "type": "time"
+            }
+          ],
           "measurement": "prometheus",
           "orderByTime": "ASC",
           "policy": "default",
@@ -779,13 +833,31 @@
                   "ngu_exp"
                 ],
                 "type": "field"
+              },
+              {
+                "params": [],
+                "type": "last"
+              },
+              {
+                "params": [
+                  "EXP"
+                ],
+                "type": "alias"
               }
             ]
           ],
           "tags": []
         },
         {
-          "groupBy": [],
+          "alias": "$col",
+          "groupBy": [
+            {
+              "params": [
+                "30s"
+              ],
+              "type": "time"
+            }
+          ],
           "measurement": "prometheus",
           "orderByTime": "ASC",
           "policy": "default",
@@ -798,6 +870,16 @@
                   "ngu_epm"
                 ],
                 "type": "field"
+              },
+              {
+                "params": [],
+                "type": "last"
+              },
+              {
+                "params": [
+                  "EPM"
+                ],
+                "type": "alias"
               }
             ]
           ],
@@ -886,18 +968,21 @@
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
-      "seriesOverrides": [
-        {
-          "alias": "prometheus.ngu_ap",
-          "yaxis": 2
-        }
-      ],
+      "seriesOverrides": [],
       "spaceLength": 10,
       "stack": false,
       "steppedLine": false,
       "targets": [
         {
-          "groupBy": [],
+          "alias": "$col - Average",
+          "groupBy": [
+            {
+              "params": [
+                "30s"
+              ],
+              "type": "time"
+            }
+          ],
           "measurement": "prometheus",
           "orderByTime": "ASC",
           "policy": "default",
@@ -910,6 +995,55 @@
                   "ngu_kpm"
                 ],
                 "type": "field"
+              },
+              {
+                "params": [],
+                "type": "last"
+              },
+              {
+                "params": [
+                  "KPM"
+                ],
+                "type": "alias"
+              }
+            ]
+          ],
+          "tags": []
+        },
+        {
+          "alias": "$col - Instant",
+          "groupBy": [
+            {
+              "params": [
+                "30s"
+              ],
+              "type": "time"
+            }
+          ],
+          "measurement": "prometheus",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "query": "select mean(kpm_instant) as \"KPM\" from (SELECT non_negative_derivative(last(\"ngu_kills\"), 1m) as \"kpm_instant\" FROM \"prometheus\" WHERE $timeFilter GROUP BY time(30s)) where $timeFilter group by time(2m)",
+          "rawQuery": true,
+          "refId": "B",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "ngu_kills"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "last"
+              },
+              {
+                "params": [
+                  "1m"
+                ],
+                "type": "non_negative_derivative"
               }
             ]
           ],
@@ -1000,7 +1134,7 @@
       "renderer": "flot",
       "seriesOverrides": [
         {
-          "alias": "prometheus.ngu_pp",
+          "alias": "PP",
           "yaxis": 2
         }
       ],
@@ -1009,7 +1143,15 @@
       "steppedLine": false,
       "targets": [
         {
-          "groupBy": [],
+          "alias": "$col",
+          "groupBy": [
+            {
+              "params": [
+                "30s"
+              ],
+              "type": "time"
+            }
+          ],
           "measurement": "prometheus",
           "orderByTime": "ASC",
           "policy": "default",
@@ -1024,17 +1166,35 @@
                 "type": "field"
               },
               {
+                "params": [],
+                "type": "last"
+              },
+              {
                 "params": [
                   " / 1000000"
                 ],
                 "type": "math"
+              },
+              {
+                "params": [
+                  "PP"
+                ],
+                "type": "alias"
               }
             ]
           ],
           "tags": []
         },
         {
-          "groupBy": [],
+          "alias": "$col",
+          "groupBy": [
+            {
+              "params": [
+                "30s"
+              ],
+              "type": "time"
+            }
+          ],
           "measurement": "prometheus",
           "orderByTime": "ASC",
           "policy": "default",
@@ -1047,6 +1207,16 @@
                   "ngu_ppph"
                 ],
                 "type": "field"
+              },
+              {
+                "params": [],
+                "type": "last"
+              },
+              {
+                "params": [
+                  "PPPH"
+                ],
+                "type": "alias"
               }
             ]
           ],
@@ -1122,5 +1292,5 @@
   "timezone": "",
   "title": "NGU Tower Automation",
   "uid": "4TdN1jSnz",
-  "version": 3
+  "version": 7
 }
