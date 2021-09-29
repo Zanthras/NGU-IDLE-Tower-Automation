@@ -6,6 +6,9 @@ switching levels every time a different tier of the tower is about to produce re
 with the first 20 tiers all having different kill requirements you can actually take advantage of all the tiers at the 
 same time. 
 
+[Example of the program starting and running](https://user-images.githubusercontent.com/5170786/135208480-caa8e166-4683-4562-9c37-9a6abf758a68.mp4)
+
+
 ## Requirements
 
 - Go1.16 (probably will work with earlier just completely untested)
