@@ -13,41 +13,41 @@ func measureClick() {
 
 	clicks := 2500
 
-	//for x := 0; x < clicks; x++ {
-	//	clickVariableDelay(EnNGUSkill1Up, time.Millisecond*5*1)
-	//}
-	//time.Sleep(time.Second)
-	//for x := 0; x < clicks; x++ {
-	//	clickVariableDelay(EnNGUSkill2Up, time.Millisecond*5*2)
-	//}
-	//time.Sleep(time.Second)
-	//for x := 0; x < clicks; x++ {
-	//	clickVariableDelay(EnNGUSkill3Up, time.Millisecond*5*3)
-	//}
-	//time.Sleep(time.Second)
-	//for x := 0; x < clicks; x++ {
-	//	clickVariableDelay(EnNGUSkill4Up, time.Millisecond*5*4)
-	//}
+	for x := 0; x < clicks; x++ {
+		clickVariableDelay(EnNGUSkill1Up, time.Millisecond*5*1)
+	}
+	time.Sleep(time.Second)
+	for x := 0; x < clicks; x++ {
+		clickVariableDelay(EnNGUSkill2Up, time.Millisecond*5*2)
+	}
+	time.Sleep(time.Second)
+	for x := 0; x < clicks; x++ {
+		clickVariableDelay(EnNGUSkill3Up, time.Millisecond*5*3)
+	}
+	time.Sleep(time.Second)
+	for x := 0; x < clicks; x++ {
+		clickVariableDelay(EnNGUSkill4Up, time.Millisecond*5*4)
+	}
 	time.Sleep(time.Second)
 	for x := 0; x < clicks; x++ {
 		clickVariableDelay(EnNGUSkill5Up, time.Millisecond*5*5)
 	}
-	//time.Sleep(time.Second)
-	//for x := 0; x < clicks; x++ {
-	//	clickVariableDelay(EnNGUSkill6Up, time.Millisecond*5*6)
-	//}
-	//time.Sleep(time.Second)
-	//for x := 0; x < clicks; x++ {
-	//	clickVariableDelay(EnNGUSkill7Up, time.Millisecond*5*7)
-	//}
-	//time.Sleep(time.Second)
-	//for x := 0; x < clicks; x++ {
-	//	clickVariableDelay(EnNGUSkill8Up, time.Millisecond*5*8)
-	//}
-	//time.Sleep(time.Second)
-	//for x := 0; x < clicks; x++ {
-	//	clickVariableDelay(EnNGUSkill9Up, time.Millisecond*5*9)
-	//}
+	time.Sleep(time.Second)
+	for x := 0; x < clicks; x++ {
+		clickVariableDelay(EnNGUSkill6Up, time.Millisecond*5*6)
+	}
+	time.Sleep(time.Second)
+	for x := 0; x < clicks; x++ {
+		clickVariableDelay(EnNGUSkill7Up, time.Millisecond*5*7)
+	}
+	time.Sleep(time.Second)
+	for x := 0; x < clicks; x++ {
+		clickVariableDelay(EnNGUSkill8Up, time.Millisecond*5*8)
+	}
+	time.Sleep(time.Second)
+	for x := 0; x < clicks; x++ {
+		clickVariableDelay(EnNGUSkill9Up, time.Millisecond*5*9)
+	}
 
 }
 
@@ -148,5 +148,20 @@ func spamDetails() {
 		end := time.Now()
 		timer := end.Sub(start)
 		fmt.Println("pos:", x-LEFT, y-TOP, "color---- ", color, timer)
+	}
+}
+
+func speedClick() {
+	// Start out paused
+	PAUSE.Lock()
+	for {
+		if QUIT {
+			os.Exit(0)
+		}
+		PAUSE.Wait()
+		//x, y := robotgo.GetMousePos()
+		robotgo.Click()
+		time.Sleep(10 * time.Millisecond)
+		//clickCheckWait(Check{X: x, Y: y})
 	}
 }

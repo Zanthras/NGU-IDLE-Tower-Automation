@@ -7,6 +7,7 @@ import (
 	"math"
 	"net/http"
 	"os"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -17,33 +18,25 @@ import (
 	"github.com/go-vgo/robotgo"
 )
 
-var TOP int
-var LEFT int
-var QUIT bool
-var STATUS string
-var EXTRASANITY bool
-var PAUSE Pauser
-var colorTiming []time.Duration
-var AppMetrics Metrics
-
 func main() {
 
-	sanityCheck := flag.Bool("sanity", false, "Enable extra sanity checking for ensuring exp/ap is generated")
 	snipe := flag.String("snipe", "", "Attempt to boss snipe the targeted zone")
 	tower := flag.Bool("tower", false, "Run the ITOPOD for AP/EXP")
+	tier := flag.Int("tier", 1, "Set the Tower minimum tier for better non AP gains")
+	levelSkip := flag.Int("skip", 10, "Maximum ITOPOD levels to snipe higher for extra exp/ap")
 	debug := flag.String("debug", "", "execute debug function")
+	duration := flag.Duration("time", time.Hour*12, "time to run before first iron pill")
+	secondHalf := flag.Bool("second", false, "Set the script to assume its the second half of as 24h cycle")
 	flag.Parse()
 
-	EXTRASANITY = *sanityCheck
+	MIN_ITOPOD_TIER = *tier
+	MAX_ITOPOD_SNIPE = *levelSkip
 
-	getNGULocation()
+	//getNGULocation()
 	log.Println("Window Found at", TOP, LEFT)
 
 	// Setup the bailout key
-	go watchKeyBindings("`", "p")
-
-	http.Handle("/metrics", promhttp.Handler())
-	go http.ListenAndServe(":9100", nil)
+	go watchKeyBindings("`", "~")
 
 	// Feature selector
 	switch {
@@ -57,20 +50,37 @@ func main() {
 			spamDetails()
 		case "timing":
 			measureClick()
+		case "click":
+			speedClick()
+		case "itopodlevel":
+			log.Println(captureITOPODLevel())
 		}
 	case *snipe != "":
 		BossSnipe(*snipe)
 	case *tower:
+
+		// Export metrics
+		http.Handle("/metrics", promhttp.Handler())
+		go http.ListenAndServe(":9100", nil)
+
+		// Setup a panic if the game freezes so to more easily debug after the fact
+		go FreezePanic()
 		initMetrics()
 		firstRun := true
+
+		// One off second half of the day run
+		if *secondHalf {
+			IdleITOPOD(*duration)
+			CastIronPill()
+			EatFruit(true)
+			firstRun = false
+		}
+
 		// Do a daily loop forever!
 		for {
 			if firstRun {
-				hours := time.Duration(12)
-				quarters := time.Duration(0)
-				firstRun = false
 				// customized first run time because you almost never start idling at exactly 00:00 for blood
-				IdleITOPOD(time.Minute*60*hours + time.Minute*15*quarters)
+				IdleITOPOD(*duration)
 			} else {
 				// Run for 12 hours to make the pill available
 				IdleITOPOD(time.Hour * 12)
@@ -140,24 +150,33 @@ func numbers(b []byte) string {
 }
 
 func SpinTheWheel() {
+	notKillingStart := time.Now()
 	clickCheckWait(MenuMoneyPit)
 	clickCheckWait(DailySpin)
 	clickCheckWait(DailySpinNoBS)
+	dur := time.Now().Sub(notKillingStart)
+	AppMetrics.IdleDuration += dur
 }
 
 func EatFruit(all bool) {
+	notKillingStart := time.Now()
 	clickCheckWait(MenuYggdrasil)
 	if all {
 		clickCheckWait(EatAllFruit)
 	} else {
 		clickCheckWait(EatMaxFruit)
 	}
+	dur := time.Now().Sub(notKillingStart)
+	AppMetrics.IdleDuration += dur
 }
 
 func CastIronPill() {
+	notKillingStart := time.Now()
 	clickCheckWait(MenuBloodMagic)
 	clickCheckWait(CastSpells)
 	clickCheckWait(IronPill)
+	dur := time.Now().Sub(notKillingStart)
+	AppMetrics.IdleDuration += dur
 }
 
 func writeStatusLog() {
@@ -175,9 +194,12 @@ func writeStatusLog() {
 	}
 }
 
-func prettyNum(num float64) string {
+func prettyNum(num float64, notFloat bool) string {
 
 	if num < 1000 {
+		if notFloat {
+			return fmt.Sprintf("%d", int64(num))
+		}
 		return fmt.Sprintf("%.2f", num)
 	}
 	if num > math.MaxInt64 {
@@ -250,3 +272,41 @@ func (p *Pauser) Duration() time.Duration {
 }
 
 func noop(i interface{}) {}
+
+func FreezePanic() {
+	// Known spots will panic at 30 seconds, this unknown one needs to kick in after that timeframe
+	timer := time.NewTicker(time.Minute)
+	var last float64
+	var pauseDur time.Duration
+	for range timer.C {
+		// If we paused at any point during the last freeze check, the duration will have gone up and thus we can ignore
+		// any potential stalling. (since it could just be a pause).
+		currentPause := PAUSE.Duration()
+		if currentPause > pauseDur || PAUSE.IsLocked() {
+			continue
+		}
+		pauseDur = currentPause
+		current := AppMetrics.Kills.Value
+		if current == last {
+			PrintStack()
+			panic("Game has stalled, please debug the current state")
+		}
+		last = current
+	}
+}
+
+func PrintStack() {
+	os.Stderr.Write(Stack())
+}
+
+// Copied from the debug package, just with all set to true
+func Stack() []byte {
+	buf := make([]byte, 1024)
+	for {
+		n := runtime.Stack(buf, true)
+		if n < len(buf) {
+			return buf[:n]
+		}
+		buf = make([]byte, 2*len(buf))
+	}
+}

@@ -1,20 +1,16 @@
 package main
 
-import (
-	"time"
-)
-
-var FAILCOUNT int
-var CLICKDURATION time.Duration
-var CLICKCOUNT int
-
 type Check struct {
 	X      int
 	Y      int
 	Colors []string
 }
 
-var EnemyHealth = Check{X: 736, Y: 430, Colors: []string{"d93030", "eb3434", "db3131", "da3030", "e83333", "0f0303"}}
+type RECT struct {
+	Left, Top, Right, Bottom int32
+}
+
+var EnemyHealth = Check{X: 736, Y: 430, Colors: []string{"d93030", "eb3434", "db3131", "da3030", "e83333", "0f0303", "ec3434"}}
 var EnemyHealthEmpty = Check{X: 736, Y: 430, Colors: []string{"fafafa"}}
 var EnemyStatsVisible = Check{X: 734, Y: 350, Colors: []string{"000000"}}
 var MyHealthFull = Check{X: 514, Y: 447, Colors: []string{"ec3434"}}
@@ -23,7 +19,9 @@ var ITOPODStartBox = Check{X: 613, Y: 219}
 var ITOPODEngage = Check{X: 625, Y: 322}
 var ITOPODHeader = Check{X: 445, Y: 75}
 var ITOPODOptimal = Check{X: 708, Y: 233}
+var ITOPODMax = Check{X: 703, Y: 269}
 var ITOPODBoxOpen = Check{X: 605, Y: 225, Colors: []string{"ffffff"}}
+var ITOPODBoxClose = Check{X: 576, Y: 472}
 var AdventureLeft = Check{X: 731, Y: 236}
 var AdventureRight = Check{X: 944, Y: 236}
 var BossCrown = Check{X: 741, Y: 307, Colors: []string{"f7ef29"}}
@@ -41,7 +39,7 @@ var MegaBuffSkillUnused = Check{X: 671, Y: 193, Colors: []string{"c39494"}}
 
 var IdleModeAbility = Check{X: 330, Y: 137}
 var IdleModeOn = Check{X: 316, Y: 144, Colors: []string{"ffeb04"}}
-var IdleModeArea = RECT{Left: int32(IdleModeOn.X - 5), Top: int32(IdleModeOn.Y - 5), Right: int32(IdleModeOn.X + 5), Bottom: int32(IdleModeOn.Y + 5)}
+var IdleModeArea = RECT{Left: 311, Top: 109, Right: 419, Bottom: 147}
 
 var OCR_ITOPOD_START_BOX = RECT{Left: 598, Top: 216, Right: 655, Bottom: 236}
 var OCR_AP_KILL_COUNT_2LINE = RECT{Left: 470, Top: 157, Right: 740, Bottom: 185}

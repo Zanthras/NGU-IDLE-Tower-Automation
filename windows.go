@@ -1,3 +1,5 @@
+// +build windows
+
 package main
 
 import (
@@ -6,16 +8,7 @@ import (
 	"unsafe"
 )
 
-const (
-	BAR_OFFSET_TOP  = 0
-	BAR_OFFSET_LEFT = 2
-)
-
 type HWND uintptr
-
-type RECT struct {
-	Left, Top, Right, Bottom int32
-}
 
 var (
 	user32, _        = syscall.LoadLibrary("user32.dll")

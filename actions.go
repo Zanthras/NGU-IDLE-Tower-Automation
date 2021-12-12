@@ -8,9 +8,6 @@ import (
 	"github.com/go-vgo/robotgo"
 )
 
-const COLORTIMINGAVG = 10
-const FrameDelayMs = 25
-
 func clickCheckWait(c Check) {
 	click(c.X, c.Y, true)
 }
@@ -99,14 +96,7 @@ func clickRight(x int, y int, frameWait bool) {
 func checkColor(c Check, debug bool) bool {
 	start := time.Now()
 	color := robotgo.GetPixelColor(c.X+LEFT, c.Y+TOP)
-	end := time.Now()
-	dur := end.Sub(start)
-	CLICKDURATION = CLICKDURATION + dur
-	CLICKCOUNT++
-	if len(colorTiming) >= COLORTIMINGAVG {
-		colorTiming = colorTiming[1:]
-	}
-	colorTiming = append(colorTiming, dur)
+	AppMetrics.RecordClick(time.Now().Sub(start))
 	if debug {
 		snagRect(RECT{
 			Left:   int32(c.X - 20),
@@ -123,15 +113,17 @@ func checkColor(c Check, debug bool) bool {
 	return false
 }
 
-func getColor(c Check) string {
+func getColor(c Check, debug bool) string {
 	start := time.Now()
 	color := robotgo.GetPixelColor(c.X+LEFT, c.Y+TOP)
-	end := time.Now()
-	dur := end.Sub(start)
-	CLICKDURATION = CLICKDURATION + dur
-	CLICKCOUNT++
-	if len(colorTiming) >= COLORTIMINGAVG {
-		colorTiming = colorTiming[1:]
+	AppMetrics.RecordClick(time.Now().Sub(start))
+	if debug {
+		snagRect(RECT{
+			Left:   int32(c.X - 20),
+			Top:    int32(c.Y - 20),
+			Right:  int32(c.X + 20),
+			Bottom: int32(c.Y + 20),
+		}, fmt.Sprintf("color-debug-%s.png", color))
 	}
 	return color
 }
@@ -214,14 +206,8 @@ func MultiCheckColor(checks []*Check, debug bool) map[*Check]CheckResult {
 		}
 		results[check] = CheckResult{Match: match, Color: color}
 	}
-	end := time.Now()
-	dur := end.Sub(start)
-	CLICKDURATION = CLICKDURATION + dur
-	CLICKCOUNT++
-	if len(colorTiming) >= COLORTIMINGAVG {
-		colorTiming = colorTiming[1:]
-	}
-	colorTiming = append(colorTiming, dur)
+	AppMetrics.RecordClick(time.Now().Sub(start))
+
 	if debug {
 		robotgo.SaveBitmap(bitmap, "multicheck.png")
 	}
